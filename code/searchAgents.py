@@ -509,20 +509,48 @@ def foodHeuristic(state, problem: FoodSearchProblem):
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 7 ICI
     '''
+    from util import Queue
 
-    #convertir grille de nourriture en liste de positions
+    #convertir grille de nourriture en liste de pos
     foodList = foodGrid.asList()
+    # BFS pour calculer la vraie distance dans le labyrinthe (avec cache)
+    walls = problem.walls
+    cache = {}
 
-    if len(foodList) == 0:
-        return 0
+    def getMazeDistance(p1, p2):
+        # search.py
+        listFringe = Queue()
+        listExplored = []
+        parent = {}
+        listFringe.push((p1, None, None))
+        parent[p1] = None
+        while not listFringe.isEmpty():
+            currentState = listFringe.pop()
+            listExplored.append(currentState[0])
+            for dx, dy in [(0,1),(0,-1),(1,0),(-1,0)]:
+                new_pos = (currentState[0][0]+dx, currentState[0][1]+dy)
+                if not walls[new_pos[0]][new_pos[1]] and new_pos not in listExplored and new_pos not in parent:
+                    listFringe.push((new_pos, None, None))
+                    parent[new_pos] = (currentState[0], None)
+        for pos in listExplored:
+            d = 0
+            state = pos
+            while state != p1:
+                d += 1
+                state = parent[state][0]
+            cache[(p1, pos)] = d
+            cache[(pos, p1)] = d
+        return cache.get((p1, p2), float('inf'))
 
     max_distance = 0
 
     for food in foodList:
-        # distance de anhattan entre pacman et point de nourriture
-        dist = abs(food[0] - position[0]) + abs(food[1] - position[1])
-        if dist > max_distance:
-            max_distance = dist
+        # distance reelle entre pacman et un food
+        distance = getMazeDistance(position, food)
+        if distance > max_distance:
+            max_distance = distance
     
     return max_distance
+
+
 

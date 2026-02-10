@@ -183,32 +183,39 @@ def uniformCostSearch(problem:SearchProblem)->List[Direction]:
     '''
     currentState = None
     parent = {}
+    best_cost = {}
     initialState = problem.getStartState() 
     listFringe = util.PriorityQueue() #changement de Stack à Queue pour BFS
     listExplored = []
 
     listFringe.push((initialState, None, 0),0)
     parent[initialState] = None
+    best_cost[initialState] = 0
     
     while not listFringe.isEmpty():
         currentState = listFringe.pop()
+        state, action, cumulative_cost = currentState
 
-        listExplored.append(currentState[0])
+        if state in listExplored: # on s'assure que nous n<ajoutons pas des noeuds subsequents que nous avons trouve avec cout moindre
+            continue
+        listExplored.append(state) # ensuite on ajoute
 
-        if problem.isGoalState(currentState[0]):
+        if problem.isGoalState(state):
             path = []
-            path.append(currentState[1])
-            while currentState[0] != initialState: 
-                currentState = parent[currentState[0]]
-                path.append(currentState[1])
+            #path.append(action)
+            while state != initialState: 
+                state, action, _ = parent[state]
+                path.append(action)
             path.reverse()
             return path
         else:
-            successorsList = problem.getSuccessors(currentState[0])
-            for node in successorsList:
-                if node[0] not in listExplored:
-                    listFringe.push(node, node[2] +currentState[2])
-                    parent[node[0]] = (currentState[0], node[1], node[2], currentState[2] + node[2]) #pas necessaire de stoker la valeur a ce point
+            successorsList = problem.getSuccessors(state)
+            for successor_state, successor_action, step_cost in successorsList:
+                new_cost = cumulative_cost + step_cost
+                if successor_state not in listExplored and (successor_state not in best_cost or new_cost < best_cost[successor_state]):  
+                    best_cost[successor_state] = new_cost
+                    listFringe.push((successor_state, successor_action, new_cost), new_cost)
+                    parent[successor_state] = (state, successor_action, cumulative_cost)
     return []
 
 def nullHeuristic(state:GameState, problem:SearchProblem=None)->List[Direction]:
@@ -225,32 +232,38 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
     '''
     currentState = None
     parent = {}
+    best_cost = {}
     initialState = problem.getStartState() 
     listFringe = util.PriorityQueue() #changement de Stack à Queue pour BFS
     listExplored = []
 
     listFringe.push((initialState, None, 0),0)
     parent[initialState] = None
+    best_cost[initialState] = 0
     
     while not listFringe.isEmpty():
         currentState = listFringe.pop()
 
+        if currentState[0] in listExplored:
+            continue
         listExplored.append(currentState[0])
 
         if problem.isGoalState(currentState[0]):
             path = []
-            path.append(currentState[1])
-            while currentState[0] != initialState: 
-                currentState = parent[currentState[0]]
-                path.append(currentState[1])
+            state = currentState[0]
+            while state != initialState: 
+                state, action, _ = parent[state]
+                path.append(action)
             path.reverse()
             return path
         else:
             successorsList = problem.getSuccessors(currentState[0])
             for node in successorsList:
-                if node[0] not in listExplored:
-                    listFringe.push(node, node[2] +currentState[2] + heuristic(node[0],problem))
-                    parent[node[0]] = (currentState[0], node[1], node[2], currentState[2] + node[2]) #pas necessaire de stosker la valeur a ce point
+                new_cost = currentState[2] + node[2]
+                if node[0] not in listExplored and (node[0] not in best_cost or new_cost < best_cost[node[0]]):
+                    best_cost[node[0]] = new_cost
+                    listFringe.push((node[0], node[1], new_cost), new_cost + heuristic(node[0],problem))
+                    parent[node[0]] = (currentState[0], node[1], currentState[2])
     return []
 
 
